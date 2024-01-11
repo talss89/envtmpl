@@ -5,7 +5,7 @@ on:
 name: Publish
 jobs:
   build:
-    name: Release - ${{ matrix.platform.os_name }}
+    name: Release - ${{ matrix.platform.target }}
     if: startsWith( github.ref, 'refs/tags/v' ) || github.ref == 'refs/tags/test-release'
     strategy:
       matrix:
@@ -36,7 +36,7 @@ jobs:
       - name: Publish release artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: envtmpl-${{ matrix.platform.os_name }}
+          name: envtmpl-${{ matrix.platform.target }}.tar.gz
           path: "target/*/release/envtmpl*"
         if: startsWith( github.ref, 'refs/tags/v' )
       - name: Publish GitHub release
