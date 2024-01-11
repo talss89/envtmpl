@@ -33,15 +33,25 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
           strip: true
+      - name: Package as archive
+        shell: bash
+        run: |
+          cd target/${{ matrix.platform.target }}/release
+          if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
+            7z a ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
+          else
+            tar czvf ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
+          fi
+          cd -
       - name: Publish release artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: envtmpl-${{ matrix.platform.target }}.tar.gz
-          path: "target/*/release/envtmpl*"
+          name: ${{ matrix.platform.name }}
+          path: "envtmpl*"
         if: startsWith( github.ref, 'refs/tags/v' )
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          files: "target/*/release/envtmpl*"
+          files: "envtmpl*"
         if: startsWith( github.ref, 'refs/tags/v' )
