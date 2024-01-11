@@ -1,0 +1,47 @@
+on:
+  push:
+    tags:
+      - 'v*'
+name: Publish
+jobs:
+  build:
+    name: Release - ${{ matrix.platform.os_name }}
+    if: startsWith( github.ref, 'refs/tags/v' ) || github.ref == 'refs/tags/test-release'
+    strategy:
+      matrix:
+        platform:
+          - release_for: Linux-x86_64
+            os: ubuntu-20.04
+            target: x86_64-unknown-linux-musl
+            bin: envtmpl
+            name: envtmpl-Linux-x86_64.tar.gz
+            command: build
+          - release_for: Linux-aarch64
+            os: ubuntu-20.04
+            target: aarch64-unknown-linux-musl
+            bin: envtmpl
+            name: envtmpl-Linux-aarch64.tar.gz
+            command: build
+    runs-on: ${{ matrix.platform.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: ${{ matrix.platform.command }}
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true
+      - name: Publish release artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: envtmpl-${{ matrix.platform.os_name }}
+          path: "envtmpl*"
+        if: startsWith( github.ref, 'refs/tags/v' )
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: "envtmpl*"
+        if: startsWith( github.ref, 'refs/tags/v' )
