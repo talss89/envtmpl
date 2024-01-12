@@ -2,6 +2,7 @@ use clap::Parser;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
+use glob::glob;
 
 mod template;
 
@@ -19,9 +20,10 @@ struct Args {
 }
 
 fn process(path: &PathBuf, outpath: &PathBuf) -> anyhow::Result<()> {
+    println!("{} -> {}", &path.to_str().unwrap(), &outpath.to_str().unwrap());
+
     let output = crate::template::render(fs::read_to_string(&path)?)?;
 
-    println!("{} -> {}", &path.to_str().unwrap(), &outpath.to_str().unwrap());
     fs::write(&outpath, &output)?;
 
     Ok(())
@@ -60,11 +62,22 @@ fn main() -> anyhow::Result<()> {
                 fs::create_dir_all(&output)?;
             }
 
-            let paths = fs::read_dir(&input).unwrap();
+            let input_pattern = &input.join("**/*").to_owned();
 
-            for path in paths {
-                let input = path.as_ref().clone();
-                process(&input.unwrap().path(), &output.join(&path?.file_name()))?;
+            for entry in glob(input_pattern.to_str().unwrap()).expect("Failed to read glob pattern") {
+                
+                match entry {
+                    Ok(path) => {
+                        let output = &output.join(&path);
+                        process(&path, &output)?;
+                    }
+
+                    Err(e) => {
+                        return Err(anyhow::anyhow!(e));
+                    }
+                }
+                
+                
             }
         }
 
