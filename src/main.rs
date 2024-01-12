@@ -68,8 +68,10 @@ fn main() -> anyhow::Result<()> {
                 
                 match entry {
                     Ok(path) => {
-                        let output = &output.join(&path);
-                        process(&path, &output)?;
+                        if fs::metadata(&path)?.is_file() {
+                            let output = &output.join(&path);
+                            process(&path, &output)?;
+                        }
                     }
 
                     Err(e) => {
