@@ -61,6 +61,11 @@ fn main() -> anyhow::Result<()> {
         if fs::metadata(&input)?.is_file() {
             process(&input, &output)?;
         } else {
+
+            if !fs::metadata(&output).is_ok() {
+                fs::create_dir_all(&output)?;
+            }
+
             let output = fs::canonicalize(&output)?;
             env::set_current_dir(input)?;
 
