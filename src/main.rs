@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::fs;
+use std::{fs, env};
 use std::path::PathBuf;
 use std::str::FromStr;
 use glob::glob;
@@ -21,6 +21,10 @@ struct Args {
 
 fn process(path: &PathBuf, outpath: &PathBuf) -> anyhow::Result<()> {
     println!("{} -> {}", &path.to_str().unwrap(), &outpath.to_str().unwrap());
+
+    if !fs::metadata(&outpath.parent().unwrap()).is_ok() {
+        fs::create_dir_all(&outpath.parent().unwrap())?;
+    }
 
     let output = crate::template::render(fs::read_to_string(&path)?)?;
 
@@ -57,14 +61,10 @@ fn main() -> anyhow::Result<()> {
         if fs::metadata(&input)?.is_file() {
             process(&input, &output)?;
         } else {
+            let output = fs::canonicalize(&output)?;
+            env::set_current_dir(input)?;
 
-            if !fs::metadata(&output).is_ok() {
-                fs::create_dir_all(&output)?;
-            }
-
-            let input_pattern = &input.join("**/*").to_owned();
-
-            for entry in glob(input_pattern.to_str().unwrap()).expect("Failed to read glob pattern") {
+            for entry in glob("**/*").expect("Failed to read glob pattern") {
                 
                 match entry {
                     Ok(path) => {
