@@ -22,6 +22,10 @@ struct Args {
 fn process(path: &PathBuf, outpath: &PathBuf) -> anyhow::Result<()> {
     println!("{} -> {}", &path.to_str().unwrap(), &outpath.to_str().unwrap());
 
+    if !fs::metadata(&outpath.parent().unwrap()).is_ok() {
+        fs::create_dir_all(&outpath.parent().unwrap())?;
+    }
+
     let output = crate::template::render(fs::read_to_string(&path)?)?;
 
     fs::write(&outpath, &output)?;
