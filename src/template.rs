@@ -249,7 +249,11 @@ fn split_list(args: &[Value]) -> Result<Value, FuncError> {
         _ => { return Err(FuncError::UnableToConvertFromValue); }
     };
 
-    Ok(Value::from(subject.split(delim).collect::<String>()))
+    if subject == "" {
+        return Ok(Value::Array([].to_vec()))
+    }
+
+    Ok(Value::Array(subject.split(delim).map(|s| Value::String(s.to_string())).collect::<Vec<Value>>()))
 }
 
 gtmpl_fn!(
