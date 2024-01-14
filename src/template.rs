@@ -5,6 +5,7 @@ use std::{env, path::Path, collections::HashMap};
 use semver::{Version, VersionReq};
 use path_dedot::*;
 use std::os::unix::fs::MetadataExt;
+use url::*;
 
 #[derive(Gtmpl)]
 struct TheContext {
@@ -280,6 +281,89 @@ fn to_string(args: &[Value]) -> Result<Value, FuncError> {
     }
 }
 
+gtmpl_fn!(
+    fn has_prefix(prefix: String, subject: String) -> Result<bool, FuncError> {
+        Ok(subject.starts_with(&prefix))
+    }
+);
+
+gtmpl_fn!(
+    fn has_suffix(suffix: String, subject: String) -> Result<bool, FuncError> {
+        Ok(subject.ends_with(&suffix))
+    }
+);
+
+gtmpl_fn!(
+    fn empty(subject: String) -> Result<bool, FuncError> {
+        Ok(subject == "")
+    }
+);
+
+fn ternary(args: &[Value]) -> Result<Value, FuncError> {
+    if args.len() != 3 {
+        return Err(FuncError::ExactlyXArgs("ternary".into(), 3));
+    }
+
+    match args[2] {
+        Value::Bool(state) => {
+            if state {
+                return Ok(args[0].clone());
+            } else {
+                return Ok(args[1].clone());
+            }           
+        },
+        _ => {
+            return Err(FuncError::UnableToConvertFromValue);
+        }
+    }
+
+}
+
+fn dict(args: &[Value]) -> Result<Value, FuncError> {
+    let argvec = args.to_vec();
+    let mut out: HashMap<String, Value> = HashMap::new();
+
+    if &args.len() % 2 != 0 {
+        return Err(FuncError::Generic("dict must have even number of args".to_string()));
+    }
+
+    for argpair in argvec.chunks(2).into_iter() {
+        out.insert(argpair[0].to_string().clone(), argpair[1].clone());
+    }
+
+    Ok(Value::Object(out))
+}
+
+fn url_parse(args: &[Value]) -> Result<Value, FuncError> {
+    
+    if args.len() != 1 {
+        return Err(FuncError::ExactlyXArgs("urlParse".into(), 1));
+    }
+
+    match &args[0] {
+        Value::String(url) => {
+            let url = Url::parse(&url).unwrap();
+            let mut out: HashMap<String, Value> = HashMap::new();
+
+            out.insert("scheme".to_string(), Value::String(url.scheme().to_string()));
+            out.insert("host".to_string(), Value::String(url.host_str().or(Some("")).unwrap().to_string()));
+            out.insert("path".to_string(), Value::String(url.path().to_string()));
+            out.insert("query".to_string(), Value::String(url.query().or(Some("")).unwrap().to_string()));
+            out.insert("opaque".to_string(), Value::Nil);
+            out.insert("fragment".to_string(), Value::String(url.fragment().or(Some("")).unwrap().to_string()));
+            out.insert("userinfo".to_string(), Value::String(format!("{}{}", url.username(), match url.password() {
+                Some(pass) => format!(":{}", pass),
+                None => "".to_string()
+            })));
+
+
+            Ok(Value::Object(out))
+
+        }
+        _ => Err(FuncError::UnableToConvertFromValue)
+    }
+}
+
 pub fn render(input: String) -> anyhow::Result<String> {
 
     let mut tmpl = gtmpl::Template::default();
@@ -295,7 +379,9 @@ pub fn render(input: String) -> anyhow::Result<String> {
     tmpl.add_func("quote", quote);
     tmpl.add_func("trimAll", trim_all);
     tmpl.add_func("trimPrefix", trim_prefix);
+    tmpl.add_func("hasPrefix", has_prefix);
     tmpl.add_func("trimSuffix", trim_suffix);
+    tmpl.add_func("hasSuffix", has_suffix);
     tmpl.add_func("clean", clean);
     tmpl.add_func("max", max);
     tmpl.add_func("min", min);
@@ -308,6 +394,10 @@ pub fn render(input: String) -> anyhow::Result<String> {
     tmpl.add_func("nospace", nospace);
     tmpl.add_func("replace", replace);
     tmpl.add_func("toString", to_string);
+    tmpl.add_func("empty", empty);
+    tmpl.add_func("ternary", ternary);
+    tmpl.add_func("dict", dict);
+    tmpl.add_func("urlParse", url_parse);
 
     let mut os_vars: HashMap<String, Value> = HashMap::new();
 
