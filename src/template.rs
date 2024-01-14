@@ -163,19 +163,19 @@ fn min(args: &[Value]) -> Result<Value, FuncError> {
 
 gtmpl_fn!(
     fn trim_all(delim: String, subject: String) -> Result<String, FuncError> {
-        Ok(subject.strip_prefix(&delim).or(Some(&delim)).unwrap().to_string().strip_suffix(&delim).or(Some(&delim)).unwrap().to_string())
+        Ok(subject.strip_prefix(&delim).or(Some(&subject)).unwrap().to_string().strip_suffix(&delim).or(Some(&subject)).unwrap().to_string())
     }
 );
 
 gtmpl_fn!(
     fn trim_prefix(delim: String, subject: String) -> Result<String, FuncError> {
-        Ok(subject.strip_prefix(&delim).or(Some(&delim)).unwrap().to_string())
+        Ok(subject.strip_prefix(&delim).or(Some(&subject)).unwrap().to_string())
     }
 );
 
 gtmpl_fn!(
     fn trim_suffix(delim: String, subject: String) -> Result<String, FuncError> {
-        Ok(subject.strip_suffix(&delim).or(Some(&delim)).unwrap().to_string())
+        Ok(subject.strip_suffix(&delim).or(Some(&subject)).unwrap().to_string())
     }
 );
 
